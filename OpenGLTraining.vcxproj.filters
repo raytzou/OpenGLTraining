@@ -18,8 +18,5 @@
     <ClCompile Include="OpenGLTraining.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
-    <ClCompile Include="glad.c">
-      <Filter>來源檔案</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
