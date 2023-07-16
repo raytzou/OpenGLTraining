@@ -72,6 +72,7 @@ int main(void)
 	if (glewInit() != GLEW_OK)
 	{
 		cout << "Initializing GLEW failed." << endl;
+		glfwTerminate();
 		return -1;
 	}
 
@@ -127,6 +128,7 @@ int main(void)
 		glfwPollEvents(); // poll and process events
 	}
 
+	glfwTerminate(); // remember close OpenGL window after program is over
 	system("pause");
 	return 0;
 }
