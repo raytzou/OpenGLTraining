@@ -1,29 +1,26 @@
 ﻿/*
-	https://ithelp.ithome.com.tw/articles/10284098
-	https://www.glfw.org/documentation.html
-	https://www.opengl-tutorial.org/
-	https://stackoverflow.com/questions/43162311/visual-studio-community-2017-lnk2019-unresolved-external-symbol
-	pre-requirement: GLFW, GLEW, CMake
-	Visual Stuidio Project Property Setting: add library, header, linker of GLFW and GLEW
-	Remember: add GLEW dll(glew32.dll) in project folder
+	https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
+	pre-requirement: GLM (OpenGL Mathematics)
 
-	GLFW: GLFW is an Open Source, multi-platform library for OpenGL, OpenGL ES and Vulkan development on the desktop.
-	GLEW: The OpenGL Extension Wrangler Library (GLEW) is a cross-platform open-source C/C++ extension loading library.
-	Training(2023-07-09): OpenGL window, change color by press space
+	Training(2023-07-16): Matrices (OpenGL Mathematics)
 */
 
 
 /////OpenGL libraries/////
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+/////OpenGL Mathematics/////
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/string_cast.hpp> // for printing vector
 /////Standard C++ header/////
 #include <iostream>
 #include <cstdlib>
 
 using namespace std;
+using namespace glm;
 
-// https://learn.microsoft.com/zh-tw/cpp/cpp/data-type-ranges?view=msvc-170
-// wish I can remember all types one day
 const unsigned short SCREEN_WIDTH = 800;
 const unsigned short SCREEN_HEIGHT = 600;
 
@@ -37,13 +34,6 @@ int main(void)
 		return -1;
 	}
 
-	/*
-		glfwWindowHint(hint, value): This function sets hints for the next call to glfwCreateWindow(). 
-		GLFW_SAMPLES: Framebuffer MSAA samples
-		GLFW_CONTEXT_VERSION_MAJOR, GLFW_CONTEXT_VERSION_MINOR: specify the OpenGL API version
-		GLFW_OPENGL_PROFILE: specifies which OpenGL profile to create the context for
-		GLFW_OPENGL_CORE_PROFILE: Possible value for GLFW_OPENGL_PROFILE. If need older version like OpenGL 3.2, can use GLFW_OPENGL_ANY_PROFILE
-	*/
 	glfwWindowHint(GLFW_SAMPLES, 4); // 4x MSAA
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -54,19 +44,13 @@ int main(void)
 	
 	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "My OpenGL window", NULL, NULL); // Handler of OpenGL window
 
-	if (!window) // window = NULL = false = 0
+	if (!window)
 	{
 		cout << "initializing OpenGL window failed." << endl;
-		glfwTerminate(); // Terminate the OpenGL window
+		glfwTerminate();
 		return -1;
 	}
 
-	/*
-		Rendering Contexts: https://learn.microsoft.com/en-us/windows/win32/opengl/rendering-contexts
-		An OpenGL rendering context is a port through which all OpenGL commands pass.
-		Every thread that makes OpenGL calls must have a current rendering context.
-		Rendering contexts link OpenGL to the Windows windowing systems.
-	*/
 	glfwMakeContextCurrent(window); // make the windows's context.
 
 	if (glewInit() != GLEW_OK)
@@ -75,56 +59,63 @@ int main(void)
 		return -1;
 	}
 
+	mat4 matrix = translate(mat4(1.0f), vec3(10.0f, .0f, .0f)); // 4x4 matrix
+	vec4 vector(10.0f, 10.0f, 10.0f, 1.0f);
+	/*
+		matrix = [
+					1, 0, 0, 10
+					0, 1, 0, 0
+					0, 0, 1, 0
+					0, 0, 0, 1
+					]
+		vector = (10, 10, 10, 1)
+	*/
+	vec4 transformVector = matrix * vector;
+	/*
+		after transform, in Mathematic, it means we get a Homogeneous Vecor and it represents a position but not direction
+		transformVecot = (20, 10, 10, 1) 
+	*/
+
+	cout << "matrix: " << to_string(matrix) << endl;
+	cout << "vector: " << to_string(vector) << endl;
+	cout << "transformVector: " << to_string(transformVector) << endl;
+
+	mat4 scalingMatrix = scale(vec3(2.0f, 2.0f, 2.0f));
+	cout << "scaling transformVector: " << to_string(scalingMatrix * transformVector) << endl;
+
+	vec3 rotationAxis(1.0, .0f, .0f);
+	mat4 rotationMatrix = rotate(90.0f, rotationAxis); // roatate x axis in 90 degrees, and it seems becoming a matrix
+	cout << "rotate: " << to_string(rotationMatrix * transformVector) << endl; // (20.000000, -13.420702, 4.459230, 1.000000), what?
+
+	vec4 finalTransformedVector = transformVector * rotationMatrix * scalingMatrix; // !!IMPORTANT!! remember do rotation or other transform before scaling
+	cout << "final (rotate, scaling) transform: " << to_string(finalTransformedVector) << endl; // vec4(40.000000, 8.918460, -26.841404, 1.000000)
+
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 	/*
 		glfwSetInputMode(): This function sets an input mode option for the specified window.
-		GLFW_STICKY_KEYS: When sticky keys mode is enabled, 
-						  the pollable state of a key will remain GLFW_PRESS until the state of that key is polled with glfwGetKey. 
-						  Once it has been polled, if a key release event had been processed in the meantime, 
+		GLFW_STICKY_KEYS: When sticky keys mode is enabled,
+						  the pollable state of a key will remain GLFW_PRESS until the state of that key is polled with glfwGetKey.
+						  Once it has been polled, if a key release event had been processed in the meantime,
 						  the state will reset to GLFW_RELEASE, otherwise it will remain GLFW_PRESS.
 	*/
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+	glClearColor(.0f, .0f, .0f, .0f); // Not like glClear(), it doesn't clear the buffer. More like set color. glClearColor() is State Setting
 
-	unsigned short space_pressed = 0; // for switch screen color
 	while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS)
 	{
-		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) // Press and release Space in the same time
-		{
-			space_pressed++;
-			cout << "space pressed: " << space_pressed << endl;
-		}
-
-		switch (space_pressed % 4) // lol...
-		{
-			case 0:
-				glClearColor(0.f, 0.f, 0.f, 1.0f); // RGB
-				break;
-			case 1:
-				glClearColor(1.f, 0.f, 0.f, 1.f);
-				break;
-			case 2:
-				glClearColor(0.f, 1.f, 0.f, 1.f);
-				break;
-			case 3:
-				glClearColor(0.f, 0.f, 1.f, 1.f);
-				break;
-			default:
-				glClearColor(0.f, 0.f, 0.f, 1.0f);
-		}
-		
+		glClear(GL_COLOR_BUFFER_BIT); // render here
 		/*
 			glClear(): clear buffers to preset values
 			GL_COLOR_BUFFER_BIT: constant, tell glClear() which buffer I want to clear.
 			https://stackoverflow.com/questions/5479951/what-is-the-purpose-of-gl-color-buffer-bit-and-gl-depth-buffer-bit
 		*/
-		glClear(GL_COLOR_BUFFER_BIT); // render here
 		glfwSwapBuffers(window); // swap front and back buffer
 
+		glfwPollEvents(); // poll and process events
 		/*
 			This function processes only those events that are already in the event queue and then returns immediately.
 			Processing events will cause the window and input callbacks associated with those events to be called.
 			On some platforms, a window move, resize or menu operation will cause event processing to block.
 		*/
-		glfwPollEvents(); // poll and process events
 	}
 
 	system("pause");
